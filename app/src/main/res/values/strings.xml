@@ -1,8 +1,57 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <!-- The name of the application. -->
 
     <string name="app_name">Eyepatch</string>
+    <string name="glass_voice_trigger">Start inspection</string>
     <string name="title_activity_start_inspection">Start an Inspection</string>
-    <string name="hello_world">Hello world!</string>
+    <string name="pick_area">Pick A Room</string>
+
+
+    <!-- String having to do with URLs -->
+    <string name="base_url">http://10.2.5.32:3000</string>
+    <string name="get_auth_tok">/sessions/get_authenticity_token</string>
+
+
+
+    <!-- The names of the various areas to inspect -->
+    <array name="area_names">
+        <item>Kitchen</item>
+        <item>Bathroom</item>
+        <item>Living Room</item>
+    </array>
+
+    <!-- References to the area for the contents of the room.  Must be in the same order! -->
+    <array name="area_contents">
+        <item>@array/kitchen</item>
+        <item>@array/bathroom</item>
+        <item>@array/living_room</item>
+    </array>
+
+    <!-- Items in the Kitchen. -->
+    <string-array name="kitchen">
+        <item>Refrigerator</item>
+        <item>Stove</item>
+        <item>Dishwasher</item>
+    </string-array>
+
+    <!-- Items in the Bathroom. -->
+    <string-array name="bathroom">
+        <item>Sink</item>
+        <item>Toilet</item>
+        <item>Shower</item>
+    </string-array>
+
+    <!-- Items in the Living Room. -->
+    <string-array name="living_room">
+        <item>TV</item>
+        <item>Couch</item>
+        <item>Lamp</item>
+    </string-array>
+
+    <string-array name="item_status">
+        <item>OK</item>
+        <item>Problem!</item>
+    </string-array>
 
 </resources>

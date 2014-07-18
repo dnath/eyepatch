@@ -8,8 +8,8 @@ repositories {
 }
 
 android {
-    compileSdkVersion "Google Inc.:Glass Development Kit Preview:19"
-    buildToolsVersion "20.0.0"
+    compileSdkVersion 'Google Inc.:Glass Development Kit Preview:19'
+    buildToolsVersion '20.0.0'
 
     defaultConfig {
         applicationId "com.appfolio.eyepatch"
@@ -28,4 +28,5 @@ android {
 
 dependencies {
     compile fileTree(dir: 'libs', include: ['*.jar'])
+    compile 'com.google.guava:guava:16.0.+'
 }
