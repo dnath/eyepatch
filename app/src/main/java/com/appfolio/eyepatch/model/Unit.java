@@ -28,10 +28,13 @@ import java.util.List;
         private static final long serialVersionUID = 1L;
 
         private List<Area> areas = new ArrayList<Area>();
+        private final int id;
         private final String name;
+        private final String authToken;
+        private final String cookie;
 
-        public Unit(String name) {
-            this.name = name;
+        public Unit(String name, int id, String authToken, String cookie) {
+            this.name = name; this.id = id; this.authToken=authToken; this.cookie=cookie;
         }
 
         public void addArea(Area area) {
@@ -58,6 +61,11 @@ import java.util.List;
         @Override
         public int indexInParent() {
             throw new RuntimeException("Units do not have parents!");
+        }
+
+        @Override
+        public int getId() {
+            return id;
         }
 
         @Override
@@ -90,6 +98,15 @@ import java.util.List;
         public String toString()
         {
             return "{"+ name + " : " + getChildren().toString() + "}";
+        }
+
+        @Override
+        public String getAuthToken() {
+            return this.authToken;
+        }
+        @Override
+        public String getCookie() {
+            return this.cookie;
         }
     }
 

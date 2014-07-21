@@ -11,7 +11,14 @@
     <!-- String having to do with URLs -->
     <string name="base_url">http://10.2.5.32:3000</string>
     <string name="get_auth_tok">/sessions/get_authenticity_token</string>
+    <string name="get_session">/mobile/sessions</string>
+    <string name="get_inspections_number">/inspections/headphones/</string>
 
+
+    <!-- Login JSON -->
+    <string name="login_json">
+        {\"session\":{\"user_email\":\"setup@appfolio.com\",\"password\":\"Appfolio55%\"}}
+    </string>
 
 
     <!-- The names of the various areas to inspect -->

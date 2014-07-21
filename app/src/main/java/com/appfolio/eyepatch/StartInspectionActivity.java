@@ -35,14 +35,25 @@ import com.google.android.glass.media.Sounds;
 import com.google.android.glass.touchpad.Gesture;
 import com.google.android.glass.touchpad.GestureDetector;
 import com.google.android.glass.view.WindowUtils;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 
+import org.apache.http.Header;
+import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
+import org.apache.http.NameValuePair;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.DefaultHttpClient;
+import org.apache.http.protocol.HTTP;
 import org.apache.http.util.EntityUtils;
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.w3c.dom.Entity;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
@@ -52,6 +63,8 @@ import java.io.OutputStream;
 import java.io.UnsupportedEncodingException;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.util.ArrayList;
+import java.util.List;
 
 
 /**
@@ -64,6 +77,10 @@ public class StartInspectionActivity extends Activity {
      * works properly.
      */
     private final Handler mHandler = new Handler();
+
+    private static final String AUTH_TOK = "AUTH_TOK";
+    private static final String COOKIE = "COOKIE";
+    private static final String DATA = "DATA";
 
     private SharedPreferences preferences;
 
@@ -105,7 +122,9 @@ public class StartInspectionActivity extends Activity {
         super.onCreate(savedInstanceState);
         preferences = getPreferences(MODE_PRIVATE);
         getAuthToken();
-        unit = getUnitFromXML();
+        getCookie();
+        getInspections();
+        unit = getUnitFromJson();
 
         // Enable voice command for menus
         getWindow().requestFeature(WindowUtils.FEATURE_VOICE_COMMANDS);
@@ -159,17 +178,25 @@ public class StartInspectionActivity extends Activity {
 
 
     private Unit getUnitFromXML() {
-        Unit unit = new Unit("Test Unit");
+        String authToken = null;
+        String cookie = null;
+        // THIS IS THE WORST HACK I HAVE EVER WRITTEN IN MY LIFE!!!!
+        while (authToken == null)
+            authToken = preferences.getString(AUTH_TOK, null);
+        while (cookie == null)
+            cookie = preferences.getString(COOKIE, null);
+
+        Unit unit = new Unit("Test Unit", 0, authToken, cookie);
         String[] areas = getResources().getStringArray(R.array.area_names);
         for (int i = 0; i < areas.length; i++) {
-            Area newArea = new Area(areas[i], unit);
+            Area newArea = new Area(areas[i], i, unit);
 
             TypedArray roomContentsArray = getResources().obtainTypedArray(R.array.area_contents);
             int roomContentsId = roomContentsArray.peekValue(i).resourceId;
             String[] items = getResources().getStringArray(roomContentsId);
-            for (String item : items) {
+            for (int j = 0; j < items.length; j++) {
 
-                newArea.addItem(new Item(item, newArea));
+                newArea.addItem(new Item(items[j], j, newArea));
             }
             unit.addArea(newArea);
         }
@@ -180,32 +207,114 @@ public class StartInspectionActivity extends Activity {
         String baseUrl = getResources().getString(R.string.base_url);
         String getAuthTok = getResources().getString(R.string.get_auth_tok);
         String getAuthTokUrl = baseUrl + getAuthTok;
-        System.err.print(getAuthTokUrl);
         final HttpClient client = new DefaultHttpClient();
         final HttpGet get = new HttpGet(getAuthTokUrl);
         get.setHeader("Accept", "*/*");
 
-            new Thread(new Runnable() {
-                public void run() {
-                    try {
-                        HttpResponse response = client.execute(get);
-                        String token = EntityUtils.toString(response.getEntity());
-                        System.err.println("*************");
-                        System.err.println("*************");
-                        System.err.println("*************");
-                        System.err.println("*************");
-                        System.err.println("*************");
-                        System.err.println("token: " + token);
-                        preferences.edit().putString("auth_tok", token).commit();
-                        System.err.println("*************");
-                        System.err.println("*************");
-                        System.err.println("*************");
-                        System.err.println("*************");
-                        System.err.println("*************");
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
+        new Thread(new Runnable() {
+            public void run() {
+                try {
+                    HttpResponse response = client.execute(get);
+                    String token = EntityUtils.toString(response.getEntity());
+                    preferences.edit().putString(AUTH_TOK, token).commit();
+                } catch (IOException e) {
+                    e.printStackTrace();
                 }
-            }).start();
+            }
+        }).start();
+    }
+
+    private void getCookie() {
+        String baseUrl = getResources().getString(R.string.base_url);
+        String getSession = getResources().getString(R.string.get_session);
+        String getSessionUrl = baseUrl + getSession;
+        final HttpClient client = new DefaultHttpClient();
+        final HttpPost post = new HttpPost(getSessionUrl);
+        post.setHeader("Accept", "*/*");
+        post.setHeader("Content-type", "application/json");
+
+        new Thread(new Runnable() {
+            public void run() {
+                try {
+                    String loginJson = getResources().getString(R.string.login_json);
+                    StringEntity entity = new StringEntity(loginJson, HTTP.UTF_8);
+                    entity.setContentType("application/json");
+                    post.setEntity(entity);
+                    HttpResponse response = client.execute(post);
+
+                    String cookieString = response.getFirstHeader("Set-Cookie").getValue();
+                    String usefulCookieString = cookieString.substring(0, cookieString.indexOf(';'));
+                    preferences.edit().putString(COOKIE, usefulCookieString).commit();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }).start();
+    }
+
+    private void getInspections() {
+        String baseUrl = getResources().getString(R.string.base_url);
+        String getInspectionsNumber = getResources().getString(R.string.get_inspections_number);
+        String getInspectionUrl = baseUrl + getInspectionsNumber + "1";
+        final HttpClient client = new DefaultHttpClient();
+        String cookie = null;
+
+        while (cookie == null)
+            cookie = preferences.getString(COOKIE, null);
+
+        final HttpGet get = new HttpGet(getInspectionUrl);
+        get.setHeader("Accept", "*/*");
+        get.setHeader("Cookie", cookie);
+
+        new Thread(new Runnable() {
+            public void run() {
+                try {
+                    HttpResponse response = client.execute(get);
+                    String data_json = EntityUtils.toString(response.getEntity());
+                    preferences.edit().putString(DATA, data_json).commit();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }).start();
+    }
+
+
+
+    public Unit getUnitFromJson() {
+        // Create the unit
+        String authToken = null;
+        String cookie = null;
+        String data = null;
+
+        // THIS IS THE WORST HACK I HAVE EVER WRITTEN IN MY LIFE!!!!
+        while (authToken == null)
+            authToken = preferences.getString(AUTH_TOK, null);
+        while (cookie == null)
+            cookie = preferences.getString(COOKIE, null);
+        while (data == null)
+            data = preferences.getString(DATA, null);
+
+        Unit unit = new Unit("Test Unit", 0 , authToken, cookie);
+
+        JsonArray unit_data = new JsonParser().parse(data).getAsJsonArray();
+
+        int area_id = 0;
+        for(JsonElement areaElement : unit_data)
+        {
+            JsonObject area = areaElement.getAsJsonObject();
+            String area_name = area.get("name").getAsString();
+            Area newArea = new Area(area_name, area_id++, unit);
+            for(JsonElement itemElement : area.get("items").getAsJsonArray())
+            {
+                JsonObject item = itemElement.getAsJsonObject();
+                int item_id = item.get("id").getAsInt();
+                String item_name = item.get("name").getAsString();
+                Item newItem = new Item(item_name, item_id, newArea);
+                newArea.addItem(newItem);
+            }
+            unit.addArea(newArea);
+        }
+    return unit;
     }
 }

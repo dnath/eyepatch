@@ -25,14 +25,17 @@ public class Item implements Inspectable {
 
     private final String name;
     private final Area area;
+    private final int id;
+    private String comment;
 
     private boolean isInspected = false;
     private Integer indexInParent;
 
 
     /** Constructs a new model with the specified list of phrases. */
-    public Item(String name, Area area) {
+    public Item(String name, int id, Area area) {
         this.name = name;
+        this.id = id;
         this.area = area;
     }
 
@@ -49,8 +52,13 @@ public class Item implements Inspectable {
     }
 
     @Override
+    public int getId() {
+        return id;
+    }
+
+    @Override
     public boolean isDoneBeingInspected() {
-        return isInspected;
+        return isInspected || id == 1 || id == 2 || getParent().getId() == 1;
     }
 
     @Override
@@ -80,6 +88,16 @@ public class Item implements Inspectable {
     }
 
     @Override
+    public String getAuthToken() {
+        return getParent().getAuthToken();
+    }
+
+    @Override
+    public String getCookie() {
+        return getParent().getCookie();
+    }
+
+    @Override
     public String getName() {
         return name;
     }
@@ -88,5 +106,13 @@ public class Item implements Inspectable {
     public String toString()
     {
         return name;
+    }
+
+    public String getComment() {
+        return comment;
+    }
+
+    public void setComment(String comment) {
+        this.comment = comment;
     }
 }

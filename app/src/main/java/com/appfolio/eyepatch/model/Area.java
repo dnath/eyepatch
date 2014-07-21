@@ -27,13 +27,15 @@ public class Area implements Inspectable {
     private static final long serialVersionUID = 1L;
     private final Unit unit;
     private final String name;
+    private final int id;
 
     private List<Item> items = new ArrayList<Item>();
     private Integer indexInParent;
 
 
-    public Area(String name, Unit parent) {
+    public Area(String name, int id, Unit parent) {
         this.name = name;
+        this.id = id;
         this.unit = parent;
     }
     public void addItem(Item item)    {
@@ -63,10 +65,15 @@ public class Area implements Inspectable {
     }
 
     @Override
+    public int getId() {
+        return id;
+    }
+
+    @Override
     public boolean isDoneBeingInspected() {
         for(Item item : items)
         {
-            if(!item.isDoneBeingInspected())
+            if(!item.isDoneBeingInspected() && id != 1)
                 return false;
         }
         return true;
@@ -98,4 +105,14 @@ public class Area implements Inspectable {
     public String toString() {
         return "{"+ name + " : " + getChildren().toString() + "}";
     }
+
+    @Override
+    public String getAuthToken() {
+        return getParent().getAuthToken();
+    }
+    @Override
+    public String getCookie() {
+        return getParent().getCookie();
+    }
+
 }

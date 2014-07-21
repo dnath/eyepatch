@@ -17,6 +17,7 @@
 package com.appfolio.eyepatch;
 
 import android.content.Intent;
+import android.speech.RecognizerIntent;
 
 import com.appfolio.eyepatch.model.Area;
 import com.appfolio.eyepatch.model.Item;
@@ -31,6 +32,7 @@ import java.util.List;
  * the instruction phrases on the screen.
  */
 public class ItemSelectorActivity extends InspectableElementSelector {
+    private static final int SPEECH_REQUEST = 0;
 
     /** Overridden to load the fixed tutorial phrases from the application's resources. */
     @Override
@@ -48,7 +50,7 @@ public class ItemSelectorActivity extends InspectableElementSelector {
     protected void handleGameGesture(Gesture gesture) {
         switch (gesture) {
             case TAP:
-                inspectItem();
+                createComment();
                 break;
             case SWIPE_RIGHT:
                 moveRight();
@@ -61,11 +63,24 @@ public class ItemSelectorActivity extends InspectableElementSelector {
         }
     }
 
-        private void inspectItem() {
+        private void createComment() {
             Item item = (Item) getInspectable();
-
-            Intent intent = new Intent(this, ItemSelectorActivity.class);
-            intent.putExtra("com.appfolio.eyepatch.Item", item);
-            startActivity(intent);
+            Intent intent = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
+            intent.putExtra(RecognizerIntent.EXTRA_PROMPT, "Comment on " + item.getName());
+            startActivityForResult(intent, SPEECH_REQUEST);
         }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode,
+                                    Intent data) {
+        Item item = (Item) getInspectable();
+        if (requestCode == SPEECH_REQUEST && resultCode == RESULT_OK) {
+            List<String> results = data.getStringArrayListExtra(
+                    RecognizerIntent.EXTRA_RESULTS);
+            String spokenText = results.get(0);
+            item.setComment(spokenText);
+            System.err.println(item.getComment());
+        }
+        super.onActivityResult(requestCode, resultCode, data);
+    }
 }

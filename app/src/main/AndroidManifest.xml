@@ -35,8 +35,6 @@
 
         <activity android:name=".ItemSelectorActivity" />
 
-        <activity android:name=".ItemStatusSelectorActivity" />
-
     </application>
 
 </manifest>
